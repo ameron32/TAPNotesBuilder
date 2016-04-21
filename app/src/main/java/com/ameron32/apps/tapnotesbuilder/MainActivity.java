@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.ameron32.apps.tapnotes.v2.data.DataManager;
-import com.ameron32.apps.tapnotes.v2.data.model.INote;
 import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
 import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
 import com.ameron32.apps.tapnotes.v2.di.Injector;
@@ -18,14 +17,12 @@ import javax.inject.Inject;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
-import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.android.schedulers.HandlerScheduler;
-import rx.functions.Action0;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -37,6 +34,7 @@ public class MainActivity extends AppCompatActivity
   TextView textView;
 
   Handler networkHandler;
+  CompositeSubscription networkSubscriptions;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -52,21 +50,33 @@ public class MainActivity extends AppCompatActivity
     Injector.INSTANCE.inject(activity);
   }
 
-  Subscription subscription;
-
   @Override
   protected void onResume() {
     super.onResume();
-    subscription = dataManager.syncPrograms()
+    hold(dataManager.syncPrograms()
         .subscribeOn(HandlerScheduler.from(networkHandler))
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(programObserver);
+        .subscribe(programObserver));
+  }
+
+  void hold(Subscription sub) {
+    if (networkSubscriptions == null ||
+        networkSubscriptions.isUnsubscribed()) {
+      networkSubscriptions = new CompositeSubscription();
+    }
+    networkSubscriptions.add(sub);
+  }
+
+  void releaseSubscriptions() {
+    if (!networkSubscriptions.isUnsubscribed()) {
+      networkSubscriptions.unsubscribe();
+    }
   }
 
   @Override
   protected void onPause() {
     super.onPause();
-    if (!subscription.isUnsubscribed()) subscription.unsubscribe();
+    releaseSubscriptions();
   }
 
   Observer<List<IProgram>> programObserver = new Observer<List<IProgram>>() {
@@ -83,10 +93,10 @@ public class MainActivity extends AppCompatActivity
     public void onNext(List<IProgram> programs) {
       textView.setText("program size " + programs.size());
       for (IProgram program : programs) {
-        subscription = dataManager.syncTalks(program)
+        hold(dataManager.syncTalks(program)
             .subscribeOn(Schedulers.computation())
             .observeOn(HandlerScheduler.from(networkHandler))
-            .subscribe(talkObserver);
+            .subscribe(talkObserver));
       }
     }
   };
