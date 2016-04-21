@@ -763,7 +763,7 @@ public class ParseHelper {
     }
   }
 
-  static class ParseUserHelper implements UserHelper {
+  class ParseUserHelper implements UserHelper {
 
     @Override
     public Observable<IUser> login(final String username, final String password) {

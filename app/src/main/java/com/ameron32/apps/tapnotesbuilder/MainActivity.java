@@ -7,8 +7,10 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.ameron32.apps.tapnotes.v2.data.DataManager;
+import com.ameron32.apps.tapnotes.v2.data.model.INote;
 import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
 import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
+import com.ameron32.apps.tapnotes.v2.data.model.IUser;
 import com.ameron32.apps.tapnotes.v2.di.Injector;
 
 import java.util.List;
@@ -53,10 +55,10 @@ public class MainActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
-    hold(dataManager.syncPrograms()
-        .subscribeOn(HandlerScheduler.from(networkHandler))
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(programObserver));
+    hold(dataManager.login(X, Y)
+            .subscribeOn(Schedulers.computation())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(userObserver));
   }
 
   void hold(Subscription sub) {
@@ -79,6 +81,26 @@ public class MainActivity extends AppCompatActivity
     releaseSubscriptions();
   }
 
+  Observer<IUser> userObserver = new Observer<IUser>() {
+    @Override
+    public void onCompleted() {
+    }
+
+    @Override
+    public void onError(Throwable e) {
+      e.printStackTrace();
+    }
+
+    @Override
+    public void onNext(IUser user) {
+      textView.setText("logged in as: " + user.getId());
+      hold(dataManager.syncPrograms()
+              .subscribeOn(Schedulers.computation())
+              .observeOn(AndroidSchedulers.mainThread())
+              .subscribe(programObserver));
+    }
+  };
+
   Observer<List<IProgram>> programObserver = new Observer<List<IProgram>>() {
     @Override
     public void onCompleted() {
@@ -91,11 +113,11 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onNext(List<IProgram> programs) {
-      textView.setText("program size " + programs.size());
+      textView.append("program size " + programs.size());
       for (IProgram program : programs) {
         hold(dataManager.syncTalks(program)
             .subscribeOn(Schedulers.computation())
-            .observeOn(HandlerScheduler.from(networkHandler))
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe(talkObserver));
       }
     }
@@ -113,6 +135,31 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onNext(List<ITalk> talks) {
       textView.append("\ntalk size " + talks.size());
+      byte count = 0;
+      for (ITalk talk : talks) {
+        if (count < 5) {
+          hold(dataManager.syncNotes(talk)
+                  .subscribeOn(Schedulers.computation())
+                  .observeOn(AndroidSchedulers.mainThread())
+                  .subscribe(noteObserver));
+        }
+        count++;
+      }
+    }
+  };
+
+  private Observer<List<INote>> noteObserver = new Observer<List<INote>>() {
+    @Override
+    public void onCompleted() {}
+
+    @Override
+    public void onError(Throwable e) {
+      e.printStackTrace();
+    }
+
+    @Override
+    public void onNext(List<INote> notes) {
+      textView.append("\nnote size " + notes.size());
     }
   };
 }

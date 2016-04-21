@@ -89,4 +89,6 @@ public interface DataAccess {
 
     Observable<IUser> getClientUser();
     Observable<IUser> setClientUser();
+    Observable<IUser> login(String username, String password);
+    Observable<IUser> logout();
 }

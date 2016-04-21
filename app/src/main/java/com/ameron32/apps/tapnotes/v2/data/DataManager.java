@@ -2,6 +2,7 @@ package com.ameron32.apps.tapnotes.v2.data;
 
 import com.ameron32.apps.tapnotes.v2.data.frmk.LocalHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.RemoteHelper;
+import com.ameron32.apps.tapnotes.v2.data.frmk.UserHelper;
 import com.ameron32.apps.tapnotes.v2.data.model.INote;
 import com.ameron32.apps.tapnotes.v2.data.model.IObject;
 import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
@@ -29,6 +30,7 @@ public class DataManager implements DataAccess {
     public enum RemoteSource { Parse, BackendlessSDK, BackendlessREST }
     public enum LocalSource { ParseOffline, SQBrite, Realm, Iron }
     public enum SyncEventType { New }
+    public enum UserAuthenticator { Parse }
     /*
      *  THIS IS THE DATA_SOURCE TOGGLE.
      *  SWITCH from PARSE when infrastructure ready to migrate away.
@@ -36,6 +38,7 @@ public class DataManager implements DataAccess {
     private static final RemoteSource REMOTE_DATA_SOURCE = RemoteSource.Parse;
     private static final LocalSource LOCAL_DATA_SOURCE = LocalSource.ParseOffline;
     private static final SyncEventType SYNC_EVENT = SyncEventType.New;
+    private static final UserAuthenticator AUTHENTICATOR = UserAuthenticator.Parse;
 
     //
     /**
@@ -56,19 +59,24 @@ public class DataManager implements DataAccess {
     private final RemoteHelper remoteHelper;
     private final LocalHelper localHelper;
     private final SyncEvent syncEvent;
+    private final UserHelper userAuthenticator;
 
     @Inject
     public DataManager() {
         RemoteSource remoteSource = REMOTE_DATA_SOURCE;
         LocalSource localSource = LOCAL_DATA_SOURCE;
         SyncEventType syncEventType = SYNC_EVENT;
+        UserAuthenticator authenticator = AUTHENTICATOR;
 //    public DataManager(RemoteSource remoteSource, LocalSource localSource, SyncEventType syncEventType) {
         if (remoteSource == RemoteSource.Parse
-                && localSource == LocalSource.ParseOffline) {
+                && localSource == LocalSource.ParseOffline
+                && syncEventType == SyncEventType.New
+                && authenticator == UserAuthenticator.Parse) {
             ParseHelper parseHelper = new ParseHelper();
             remoteHelper = parseHelper.getRemote();
             localHelper = parseHelper.getCache();
             syncEvent = parseHelper.getSyncEvent();
+            userAuthenticator = parseHelper.getUsers();
             return;
         }
 
@@ -105,6 +113,11 @@ public class DataManager implements DataAccess {
             case New:
             default:
                 syncEvent = new ParseHelper().getSyncEvent(); // FIXME
+        }
+        switch(authenticator) {
+            case Parse:
+            default:
+                userAuthenticator = new ParseHelper().getUsers();
         }
     }
 
@@ -274,6 +287,16 @@ public class DataManager implements DataAccess {
     @Override
     public Observable<IUser> setClientUser() {
         return null;
+    }
+
+    @Override
+    public Observable<IUser> login(String username, String password) {
+        return userAuthenticator.login(username, password);
+    }
+
+    @Override
+    public Observable<IUser> logout() {
+        return userAuthenticator.logout();
     }
 
     //    @Override
