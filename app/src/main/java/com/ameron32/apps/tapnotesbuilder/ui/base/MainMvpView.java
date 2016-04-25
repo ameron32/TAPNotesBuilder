@@ -14,4 +14,6 @@ public interface MainMvpView extends MvpView {
   void showTalksEmpty();
 
   void showTalksError();
+
+  void syncComplete();
 }

@@ -33,8 +33,6 @@ public class Talk
     extends ColumnableParseObject
     implements ITalk<Scripture, Bible> {
 
-  public static final int NO_SONG_NUMBER = -1;
-
   public static Talk create() {
     final Talk t = new Talk();
     return t;

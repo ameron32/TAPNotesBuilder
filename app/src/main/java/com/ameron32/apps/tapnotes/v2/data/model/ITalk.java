@@ -10,6 +10,8 @@ import java.util.Locale;
  */
 public interface ITalk<T extends IScripture, U extends ISearchableBible> extends IObject {
 
+  public static final int NO_SONG_NUMBER = -1;
+
   DateTime getDateAndTime(Locale locale);
   EventType getEventType();
   String getTalkTitle();

@@ -171,7 +171,8 @@ public class ParseHelper {
               try {
                 subscriber.onNext(ParseUtil.toITalk(ParseQuery.getQuery(Talk.class)
                     .fromLocalDatastore()
-                    .whereEqualTo(Constants.TALK_oPROGRAM_OBJECT_KEY, program.getId())
+                    .whereEqualTo(Constants.TALK_oPROGRAM_OBJECT_KEY, program)
+                    .orderByAscending(Constants.TALK_SEQUENCE_STRING_KEY)
                     .find()));
               } catch (ParseException e) {
                 e.printStackTrace();
@@ -585,7 +586,7 @@ public class ParseHelper {
               try {
                 subscriber.onNext(
                     ParseUtil.toITalk(ParseQuery.getQuery(Talk.class)
-                        .whereEqualTo(Constants.NOTE_oPROGRAM_OBJECT_KEY, program)
+                        .whereEqualTo(Constants.TALK_oPROGRAM_OBJECT_KEY, program)
                         .orderByAscending(Constants.TALK_SEQUENCE_STRING_KEY)
                         .find()));
               } catch (ParseException e) {

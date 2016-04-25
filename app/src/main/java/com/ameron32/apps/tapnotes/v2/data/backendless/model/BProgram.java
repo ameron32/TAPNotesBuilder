@@ -8,6 +8,10 @@ import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
  */
 public class BProgram extends BObject implements IProgram {
 
+    public BProgram(IProgram program) {
+        super();
+        program.
+    }
 
     @Override
     public ITalk[] getTalks() {
