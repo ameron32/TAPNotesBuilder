@@ -1,8 +1,10 @@
 package com.ameron32.apps.tapnotes.v2.data.backendless;
 
 import com.ameron32.apps.tapnotes.v2.data.DataManager;
+import com.ameron32.apps.tapnotes.v2.data.SyncEvent;
 import com.ameron32.apps.tapnotes.v2.data.backendless.model.BProgram;
 import com.ameron32.apps.tapnotes.v2.data.backendless.model.BTalk;
+import com.ameron32.apps.tapnotes.v2.data.backendless.model.BUser;
 import com.ameron32.apps.tapnotes.v2.data.frmk.LocalHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.RemoteHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.UserHelper;
@@ -11,8 +13,10 @@ import com.ameron32.apps.tapnotes.v2.data.model.IObject;
 import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
 import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
 import com.ameron32.apps.tapnotes.v2.data.model.IUser;
+import com.ameron32.apps.tapnotes.v2.data.realm.RealmLocalHelper;
 import com.ameron32.apps.tapnotes.v2.data.realm.model.RProgram;
 import com.backendless.Backendless;
+import com.backendless.BackendlessCollection;
 import com.backendless.persistence.BackendlessDataQuery;
 import com.backendless.persistence.QueryOptions;
 
@@ -33,13 +37,40 @@ import rx.functions.Func1;
  */
 public class BackendlessHelper {
 
+    private static BackendlessHelper SINGLETON;
+
+    public static BackendlessHelper get() {
+        if (SINGLETON == null) {
+            SINGLETON = new BackendlessHelper();
+        }
+        return SINGLETON;
+    }
+
     LocalHelper cache;
     RemoteHelper remote;
     UserHelper users;
+    SyncEvent syncEvent;
 
-    public BackendlessHelper() {
-        cache = new RealmLocalHelper();
+    public LocalHelper getCache() {
+        return cache;
+    }
+
+    public RemoteHelper getRemote() {
+        return remote;
+    }
+
+    public SyncEvent getSyncEvent() {
+        return syncEvent;
+    }
+
+    public UserHelper getUsers() {
+        return users;
+    }
+
+    private BackendlessHelper() {
+        cache = RealmLocalHelper.get();
         remote = new BackendlessRemoteHelper();
+        // TODO sync event
         users = new BackendlessUserHelper();
     }
 
@@ -152,104 +183,25 @@ public class BackendlessHelper {
         }
     }
 
-    class RealmLocalHelper implements LocalHelper {
-
-        Realm realm;
-
-        public RealmLocalHelper() {
-            realm = Realm.getDefaultInstance();
-        }
+    class BackendlessUserHelper implements UserHelper {
 
         @Override
-        public Observable<INote> createNote(INote note) {
-            return null;
-        }
-
-        @Override
-        public Observable<INote> updateNote(INote note) {
-            return null;
-        }
-
-        @Override
-        public Observable<INote> deleteNote(INote note) {
-            return null;
-        }
-
-        @Override
-        public Observable<List<IProgram>> getPrograms() {
-            return null;
-        }
-
-        @Override
-        public Observable<List<ITalk>> getTalks(IProgram iProgram) {
-            return null;
-        }
-
-        @Override
-        public Observable<List<INote>> getNotes(IProgram program, ITalk talk, DateTime date, IUser user) {
-            return null;
-        }
-
-        @Override
-        public Observable<IProgram> getProgram(String programId) {
-            return realm.where(RProgram.class).equalTo("objectId", programId)
-                .findAllAsync().asObservable()
-                .flatMap(new Func1<RealmResults<RProgram>, Observable<RProgram>>() {
-                    @Override
-                    public Observable<RProgram> call(final RealmResults<RProgram> rPrograms) {return Observable.from(rPrograms);
-                    }
-                })
-                .map(new Func1<RProgram, IProgram>() {
-                    @Override
-                    public IProgram call(RProgram rProgram) {
-                        return rProgram;
-                    }
-                });
-        }
-
-        @Override
-        public Observable<ITalk> getTalk(String talkId) {
-            return null;
-        }
-
-        @Override
-        public Observable<ITalk> getTalkAtSequence(String sequencePosition) {
-            return null;
-        }
-
-        @Override
-        public Observable<INote> getNote(String noteId) {
-            return null;
-        }
-
-        @Override
-        public Observable<List<IProgram>> pinPrograms(List<IProgram> programs) {
-            return null;
-        }
-
-        @Override
-        public Observable<List<ITalk>> pinTalks(List<ITalk> talks) {
-            return null;
-        }
-
-        @Override
-        public Observable<List<INote>> pinNotes(List<INote> notes) {
-            return null;
-        }
-
-        @Override
-        public Observable<IProgram> pinProgram(final IProgram program) {
-            return Observable.defer(new Func0<Observable<IProgram>>() {
+        public Observable<IUser> login(final String username, final String password) {
+            return Observable.defer(new Func0<Observable<IUser>>() {
                 @Override
-                public Observable<IProgram> call() {
-                    return Observable.create(new Observable.OnSubscribe<IProgram>() {
+                public Observable<IUser> call() {
+                    return Observable.create(new Observable.OnSubscribe<IUser>() {
                         @Override
-                        public void call(Subscriber<? super IProgram> subscriber) {
-                            RProgram rProgram = new RProgram(program);
-                            realm.beginTransaction();
-                            realm.copyToRealm(rProgram);
-                            realm.commitTransaction();
-                            subscriber.onNext(rProgram);
+                        public void call(Subscriber<? super IUser> subscriber) {
+                            if (subscriber.isUnsubscribed()) return;
+                            Backendless.UserService.login(username, password);
+                            String userId = Backendless.UserService.CurrentUser().getUserId();
+                            BackendlessDataQuery query = new BackendlessDataQuery();
+                            query.setWhereClause( "objectId = '" + userId + "'" );
+//                            query.setWhereClause( "name = '" + username + "'" );
+                            BackendlessCollection<BUser> users = Backendless.Data.of( BUser.class ).find( query );
+                            IUser currentUser = users.getCurrentPage().get(0);
+                            subscriber.onNext(currentUser);
                         }
                     });
                 }
@@ -257,22 +209,48 @@ public class BackendlessHelper {
         }
 
         @Override
-        public Observable<ITalk> pinTalk(ITalk talk) {
-            return null;
+        public Observable<IUser> logout() {
+            return Observable.defer(new Func0<Observable<IUser>>() {
+                @Override
+                public Observable<IUser> call() {
+                    return Observable.create(new Observable.OnSubscribe<IUser>() {
+                        @Override
+                        public void call(Subscriber<? super IUser> subscriber) {
+                            if (subscriber.isUnsubscribed()) return;
+                            String userId = Backendless.UserService.CurrentUser().getUserId();
+                            Backendless.UserService.logout();
+                            BackendlessDataQuery query = new BackendlessDataQuery();
+                            query.setWhereClause( "objectId = '" + userId + "'" );
+//                            query.setWhereClause( "name = '" + username + "'" );
+                            BackendlessCollection<BUser> users = Backendless.Data.of( BUser.class ).find( query );
+                            IUser currentUser = users.getCurrentPage().get(0);
+                            subscriber.onNext(currentUser);
+                        }
+                    });
+                }
+            });
         }
 
         @Override
-        public Observable<INote> pinNote(INote note) {
-            return null;
+        public Observable<IUser> getClientUser() {
+            return Observable.defer(new Func0<Observable<IUser>>() {
+                @Override
+                public Observable<IUser> call() {
+                    return Observable.create(new Observable.OnSubscribe<IUser>() {
+                        @Override
+                        public void call(Subscriber<? super IUser> subscriber) {
+                            if (subscriber.isUnsubscribed()) return;
+                            String userId = Backendless.UserService.CurrentUser().getUserId();
+                            BackendlessDataQuery query = new BackendlessDataQuery();
+                            query.setWhereClause( "objectId = '" + userId + "'" );
+//                            query.setWhereClause( "name = '" + username + "'" );
+                            BackendlessCollection<BUser> users = Backendless.Data.of( BUser.class ).find( query );
+                            IUser currentUser = users.getCurrentPage().get(0);
+                            subscriber.onNext(currentUser);
+                        }
+                    });
+                }
+            });
         }
-
-        @Override
-        public Observable<List<IObject>> getUnsyncedObjects() {
-            return null;
-        }
-    }
-
-    class BackendlessUserHelper implements UserHelper {
-
     }
 }

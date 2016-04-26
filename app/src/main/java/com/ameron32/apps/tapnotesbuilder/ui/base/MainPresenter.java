@@ -1,5 +1,7 @@
 package com.ameron32.apps.tapnotesbuilder.ui.base;
 
+import android.util.Log;
+
 import com.ameron32.apps.tapnotes.v2.data.DataManager;
 import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
 import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
@@ -18,6 +20,8 @@ import rx.subscriptions.CompositeSubscription;
  * Created by klemeilleur on 4/21/2016.
  */
 public class MainPresenter extends BasePresenter<MainMvpView> {
+
+  private static final String TAG = MainPresenter.class.getSimpleName();
 
   private final DataManager dataManager;
   private CompositeSubscription subscription;
@@ -99,6 +103,7 @@ public class MainPresenter extends BasePresenter<MainMvpView> {
 
           @Override
           public void onNext(List<ITalk> iTalks) {
+            Log.d(TAG, "synced talks: size " + iTalks.size());
             getMvpView().syncComplete();
           }
         }));

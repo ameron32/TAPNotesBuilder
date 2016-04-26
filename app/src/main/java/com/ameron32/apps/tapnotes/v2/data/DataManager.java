@@ -1,5 +1,6 @@
 package com.ameron32.apps.tapnotes.v2.data;
 
+import com.ameron32.apps.tapnotes.v2.data.backendless.BackendlessHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.LocalHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.RemoteHelper;
 import com.ameron32.apps.tapnotes.v2.data.frmk.UserHelper;
@@ -25,281 +26,286 @@ import rx.functions.Func1;
 @Singleton
 public class DataManager implements DataAccess {
 
-    private static final String TAG = DataManager.class.getSimpleName();
+  private static final String TAG = DataManager.class.getSimpleName();
 
-    public enum RemoteSource { Parse, BackendlessSDK, BackendlessREST }
-    public enum LocalSource { ParseOffline, SQBrite, Realm, Iron }
-    public enum SyncEventType { New }
-    public enum UserAuthenticator { Parse }
-    /*
-     *  THIS IS THE DATA_SOURCE TOGGLE.
-     *  SWITCH from PARSE when infrastructure ready to migrate away.
-     */
-    private static final RemoteSource REMOTE_DATA_SOURCE = RemoteSource.Parse;
-    private static final LocalSource LOCAL_DATA_SOURCE = LocalSource.ParseOffline;
-    private static final SyncEventType SYNC_EVENT = SyncEventType.New;
-    private static final UserAuthenticator AUTHENTICATOR = UserAuthenticator.Parse;
+  public enum RemoteSource {Parse, BackendlessSDK, BackendlessREST}
 
-    //
-    /**
-     *  DEVELOPMENT NOTES:
-     *  see https://github.com/ribot/android-boilerplate/blob/master/app/src/main/java/uk/co/ribot/androidboilerplate/data/DataManager.java
-     *
-     *  Options:
-     *  - SharedPreferences
-     *  - Local SQLite Database
-     *  - Realm Object Storage
-     *  - Offline-mode from 3rd-party service
-     *
-     *  Use ParseHelper to call Queries.* and Commands.*
-     *  Migrate Rx to DataManager as much as possible.
-     */
-    //
+  public enum LocalSource {ParseOffline, SQBrite, Realm, Iron}
 
-    private final RemoteHelper remoteHelper;
-    private final LocalHelper localHelper;
-    private final SyncEvent syncEvent;
-    private final UserHelper userAuthenticator;
+  public enum SyncEventType {New}
 
-    @Inject
-    public DataManager() {
-        RemoteSource remoteSource = REMOTE_DATA_SOURCE;
-        LocalSource localSource = LOCAL_DATA_SOURCE;
-        SyncEventType syncEventType = SYNC_EVENT;
-        UserAuthenticator authenticator = AUTHENTICATOR;
+  public enum UserAuthenticator {Parse}
+
+  /*
+   *  THIS IS THE DATA_SOURCE TOGGLE.
+   *  SWITCH from PARSE when infrastructure ready to migrate away.
+   */
+  private static final RemoteSource REMOTE_DATA_SOURCE = RemoteSource.BackendlessSDK;
+  private static final LocalSource LOCAL_DATA_SOURCE = LocalSource.Realm;
+  private static final SyncEventType SYNC_EVENT = SyncEventType.New;
+  private static final UserAuthenticator AUTHENTICATOR = UserAuthenticator.Parse;
+
+  //
+  /**
+   * DEVELOPMENT NOTES:
+   * see https://github.com/ribot/android-boilerplate/blob/master/app/src/main/java/uk/co/ribot/androidboilerplate/data/DataManager.java
+   * <p/>
+   * Options:
+   * - SharedPreferences
+   * - Local SQLite Database
+   * - Realm Object Storage
+   * - Offline-mode from 3rd-party service
+   * <p/>
+   * Use ParseHelper to call Queries.* and Commands.*
+   * Migrate Rx to DataManager as much as possible.
+   */
+  //
+
+  private final RemoteHelper remoteHelper;
+  private final LocalHelper localHelper;
+  private final SyncEvent syncEvent;
+  private final UserHelper userAuthenticator;
+
+  @Inject
+  public DataManager() {
+    RemoteSource remoteSource = REMOTE_DATA_SOURCE;
+    LocalSource localSource = LOCAL_DATA_SOURCE;
+    SyncEventType syncEventType = SYNC_EVENT;
+    UserAuthenticator authenticator = AUTHENTICATOR;
 //    public DataManager(RemoteSource remoteSource, LocalSource localSource, SyncEventType syncEventType) {
-        if (remoteSource == RemoteSource.Parse
-                && localSource == LocalSource.ParseOffline
-                && syncEventType == SyncEventType.New
-                && authenticator == UserAuthenticator.Parse) {
-            ParseHelper parseHelper = new ParseHelper();
-            remoteHelper = parseHelper.getRemote();
-            localHelper = parseHelper.getCache();
-            syncEvent = parseHelper.getSyncEvent();
-            userAuthenticator = parseHelper.getUsers();
-            return;
-        }
 
-        switch(remoteSource) {
-            case Parse:
-                remoteHelper = new ParseHelper().getRemote();
-                break;
-            case BackendlessSDK:
-                remoteHelper = null; // FIXME
-                break;
-            case BackendlessREST:
-                remoteHelper = null; // FIXME
-                break;
-            default:
-                remoteHelper = null; // FIXME
-        }
-        switch(localSource) {
-            case ParseOffline:
-                localHelper = new ParseHelper().getCache();
-                break;
-            case SQBrite:
-                localHelper = null; // FIXME
-                break;
-            case Realm:
-                localHelper = null; // FIXME
-                break;
-            case Iron:
-                localHelper = null; // FIXME
-                break;
-            default:
-                localHelper = null; // FIXME
-        }
-        switch(syncEventType) {
-            case New:
-            default:
-                syncEvent = new ParseHelper().getSyncEvent(); // FIXME
-        }
-        switch(authenticator) {
-            case Parse:
-            default:
-                userAuthenticator = new ParseHelper().getUsers();
-        }
+    if (remoteSource == RemoteSource.Parse
+        && localSource == LocalSource.ParseOffline
+        && syncEventType == SyncEventType.New
+        && authenticator == UserAuthenticator.Parse) {
+      ParseHelper parseHelper = ParseHelper.get();
+      remoteHelper = parseHelper.getRemote();
+      localHelper = parseHelper.getCache();
+      syncEvent = parseHelper.getSyncEvent();
+      userAuthenticator = parseHelper.getUsers();
+      return;
     }
 
-    @Override
-    public Observable<INote> createNote(INote note) {
-        return localHelper.createNote(note)
-            .concatMap(new Func1<INote, Observable<? extends INote>>() {
-                @Override
-                public Observable<? extends INote> call(INote note) {
-                    return remoteHelper.createNote(note);
-                }
-            });
+    switch (remoteSource) {
+      case Parse:
+        remoteHelper = ParseHelper.get().getRemote();
+        break;
+      case BackendlessSDK:
+        remoteHelper = BackendlessHelper.get().getRemote();
+        break;
+      case BackendlessREST:
+        remoteHelper = null; // FIXME
+        break;
+      default:
+        remoteHelper = null; // FIXME
     }
-
-    @Override
-    public Observable<INote> updateNote(INote note) {
-        return localHelper.updateNote(note)
-            .concatMap(new Func1<INote, Observable<? extends INote>>() {
-                @Override
-                public Observable<? extends INote> call(INote note) {
-                    return remoteHelper.updateNote(note);
-                }
-            });
+    switch (localSource) {
+      case ParseOffline:
+        localHelper = ParseHelper.get().getCache();
+        break;
+      case SQBrite:
+        localHelper = null; // FIXME
+        break;
+      case Realm:
+        localHelper = null; // FIXME
+        break;
+      case Iron:
+        localHelper = null; // FIXME
+        break;
+      default:
+        localHelper = null; // FIXME
     }
-
-    @Override
-    public Observable<INote> deleteNote(INote note) {
-        return localHelper.deleteNote(note)
-            .concatMap(new Func1<INote, Observable<? extends INote>>() {
-                @Override
-                public Observable<? extends INote> call(INote note) {
-                    return remoteHelper.deleteNote(note);
-                }
-            });
+    switch (syncEventType) {
+      case New:
+      default:
+        syncEvent = ParseHelper.get().getSyncEvent(); // FIXME
     }
-
-    @Override
-    public Observable<List<IObject>> getObjects() {
-        throw new Error("method not ready");
+    switch (authenticator) {
+      case Parse:
+      default:
+        userAuthenticator = ParseHelper.get().getUsers();
     }
+  }
 
-    @Override
-    public Observable<List<IProgram>> getPrograms() {
-        return localHelper.getPrograms();
-    }
+  @Override
+  public Observable<INote> createNote(INote note) {
+    return localHelper.createNote(note)
+        .concatMap(new Func1<INote, Observable<? extends INote>>() {
+          @Override
+          public Observable<? extends INote> call(INote note) {
+            return remoteHelper.createNote(note);
+          }
+        });
+  }
 
-    @Override
-    public Observable<List<ITalk>> getTalks(IProgram program) {
-        return localHelper.getTalks(program);
-    }
+  @Override
+  public Observable<INote> updateNote(INote note) {
+    return localHelper.updateNote(note)
+        .concatMap(new Func1<INote, Observable<? extends INote>>() {
+          @Override
+          public Observable<? extends INote> call(INote note) {
+            return remoteHelper.updateNote(note);
+          }
+        });
+  }
 
-    @Override
-    public Observable<List<INote>> getNotes(ITalk talk) {
-        return localHelper.getNotes(null, talk, null, null);
-    }
+  @Override
+  public Observable<INote> deleteNote(INote note) {
+    return localHelper.deleteNote(note)
+        .concatMap(new Func1<INote, Observable<? extends INote>>() {
+          @Override
+          public Observable<? extends INote> call(INote note) {
+            return remoteHelper.deleteNote(note);
+          }
+        });
+  }
 
-    @Override
-    public Observable<IObject> getObject(String objectId) {
-        throw new Error("method not ready");
-    }
+  @Override
+  public Observable<List<IObject>> getObjects() {
+    throw new Error("method not ready");
+  }
 
-    @Override
-    public Observable<IProgram> getProgram(String programId) {
-        return localHelper.getProgram(programId);
-    }
+  @Override
+  public Observable<List<IProgram>> getPrograms() {
+    return localHelper.getPrograms();
+  }
 
-    @Override
-    public Observable<ITalk> getTalk(String talkId) {
-        return localHelper.getTalk(talkId);
-    }
+  @Override
+  public Observable<List<ITalk>> getTalks(IProgram program) {
+    return localHelper.getTalks(program);
+  }
 
-    @Override
-    public Observable<ITalk> getTalkAtSequence(String sequence) {
-        throw new Error("Don't use getTalkAtSequence()");
-    }
+  @Override
+  public Observable<List<INote>> getNotes(ITalk talk) {
+    return localHelper.getNotes(null, talk, null, null);
+  }
 
-    @Override
-    public Observable<INote> getNote(final String noteId) {
-        return localHelper.getNote(noteId);
-    }
+  @Override
+  public Observable<IObject> getObject(String objectId) {
+    throw new Error("method not ready");
+  }
 
-    @Override
-    public Observable<List<IObject>> syncObjects() {
-        throw new Error("method not ready");
-    }
+  @Override
+  public Observable<IProgram> getProgram(String programId) {
+    return localHelper.getProgram(programId);
+  }
 
-    @Override
-    public Observable<List<IObject>> syncObjects(Scope... scopes) {
-        throw new Error("method not ready");
-    }
+  @Override
+  public Observable<ITalk> getTalk(String talkId) {
+    return localHelper.getTalk(talkId);
+  }
 
-    @Override
-    public Observable<List<IProgram>> syncPrograms() {
-        return remoteHelper.getPrograms()
-            .concatMap(new Func1<List<IProgram>, Observable<? extends List<IProgram>>>() {
-                @Override
-                public Observable<? extends List<IProgram>> call(List<IProgram> programs) {
-                    return localHelper.pinPrograms(programs);
-                }
-            });
-    }
+  @Override
+  public Observable<ITalk> getTalkAtSequence(String sequence) {
+    throw new Error("Don't use getTalkAtSequence()");
+  }
 
-    @Override
-    public Observable<IProgram> syncProgram(String programId) {
-        return remoteHelper.getProgram(programId)
-            .concatMap(new Func1<IProgram, Observable<? extends IProgram>>() {
-                @Override
-                public Observable<? extends IProgram> call(IProgram program) {
-                    return localHelper.pinProgram(program);
-                }
-            });
-    }
+  @Override
+  public Observable<INote> getNote(final String noteId) {
+    return localHelper.getNote(noteId);
+  }
 
-    @Override
-    public Observable<List<ITalk>> syncTalks(IProgram program) {
-        return remoteHelper.getTalks(program)
-            .concatMap(new Func1<List<ITalk>, Observable<? extends List<ITalk>>>() {
-                @Override
-                public Observable<? extends List<ITalk>> call(List<ITalk> talks) {
-                    return localHelper.pinTalks(talks);
-                }
-            });
-    }
+  @Override
+  public Observable<List<IObject>> syncObjects() {
+    throw new Error("method not ready");
+  }
 
-    @Override
-    public Observable<List<INote>> syncNotes(IProgram program) {
-        return remoteHelper.getNotes(program)
-            .concatMap(new Func1<List<INote>, Observable<? extends List<INote>>>() {
-                @Override
-                public Observable<? extends List<INote>> call(List<INote> notes) {
-                    return localHelper.pinNotes(notes);
-                }
-            });
-    }
+  @Override
+  public Observable<List<IObject>> syncObjects(Scope... scopes) {
+    throw new Error("method not ready");
+  }
 
-    @Override
-    public Observable<List<INote>> syncNotes(ITalk talk) {
-        return remoteHelper.getNotes(talk)
-            .concatMap(new Func1<List<INote>, Observable<? extends List<INote>>>() {
-                @Override
-                public Observable<? extends List<INote>> call(List<INote> notes) {
-                    return localHelper.pinNotes(notes);
-                }
-            });
-    }
+  @Override
+  public Observable<List<IProgram>> syncPrograms() {
+    return remoteHelper.getPrograms()
+        .concatMap(new Func1<List<IProgram>, Observable<? extends List<IProgram>>>() {
+          @Override
+          public Observable<? extends List<IProgram>> call(List<IProgram> programs) {
+            return localHelper.pinPrograms(programs);
+          }
+        });
+  }
 
-    @Override
-    public void setDataManagerSetting(String option) {
+  @Override
+  public Observable<IProgram> syncProgram(String programId) {
+    return remoteHelper.getProgram(programId)
+        .concatMap(new Func1<IProgram, Observable<? extends IProgram>>() {
+          @Override
+          public Observable<? extends IProgram> call(IProgram program) {
+            return localHelper.pinProgram(program);
+          }
+        });
+  }
 
-    }
+  @Override
+  public Observable<List<ITalk>> syncTalks(IProgram program) {
+    return remoteHelper.getTalks(program)
+        .concatMap(new Func1<List<ITalk>, Observable<? extends List<ITalk>>>() {
+          @Override
+          public Observable<? extends List<ITalk>> call(List<ITalk> talks) {
+            return localHelper.pinTalks(talks);
+          }
+        });
+  }
 
-    @Override
-    public Observable<Action> getActions() {
-        return null;
-    }
+  @Override
+  public Observable<List<INote>> syncNotes(IProgram program) {
+    return remoteHelper.getNotes(program)
+        .concatMap(new Func1<List<INote>, Observable<? extends List<INote>>>() {
+          @Override
+          public Observable<? extends List<INote>> call(List<INote> notes) {
+            return localHelper.pinNotes(notes);
+          }
+        });
+  }
 
-    @Override
-    public void initiateAndroidService() {
+  @Override
+  public Observable<List<INote>> syncNotes(ITalk talk) {
+    return remoteHelper.getNotes(talk)
+        .concatMap(new Func1<List<INote>, Observable<? extends List<INote>>>() {
+          @Override
+          public Observable<? extends List<INote>> call(List<INote> notes) {
+            return localHelper.pinNotes(notes);
+          }
+        });
+  }
 
-    }
+  @Override
+  public void setDataManagerSetting(String option) {
 
-    @Override
-    public Observable<IUser> getClientUser() {
-        return null;
-    }
+  }
 
-    @Override
-    public Observable<IUser> setClientUser() {
-        return null;
-    }
+  @Override
+  public Observable<Action> getActions() {
+    return null;
+  }
 
-    @Override
-    public Observable<IUser> login(String username, String password) {
-        return userAuthenticator.login(username, password);
-    }
+  @Override
+  public void initiateAndroidService() {
 
-    @Override
-    public Observable<IUser> logout() {
-        return userAuthenticator.logout();
-    }
+  }
 
-    //    @Override
+  @Override
+  public Observable<IUser> getClientUser() {
+    return null;
+  }
+
+  @Override
+  public Observable<IUser> setClientUser() {
+    return null;
+  }
+
+  @Override
+  public Observable<IUser> login(String username, String password) {
+    return userAuthenticator.login(username, password);
+  }
+
+  @Override
+  public Observable<IUser> logout() {
+    return userAuthenticator.logout();
+  }
+
+  //    @Override
 //    public Observable<Progress> sync() {
 //        // upload all changed objects
 //        // wait for server response is finished processing
@@ -485,16 +491,18 @@ public class DataManager implements DataAccess {
 //        return localHelper.getNotes(program, Helper.ALL_TALKS, Helper.FOREVER, Helper.USER_ALL).distinct();
 //    }
 
-    // Helper method to post events from doOnCompleted.
-    private Action0 postEventAction(final Object event) {
-        return new Action0() {
-            @Override
-            public void call() {
-                // TODO: method
+  // Helper method to post events from doOnCompleted.
+  private Action0 postEventAction(final Object event) {
+    return new Action0() {
+      @Override
+      public void call() {
+        // TODO: method
 //                eventPoster.postEventSafely(event);
-            }
-        };
-    }
+      }
+    };
+  }
 
-    public SyncEvent getSyncEvent() { return syncEvent; }
+  public SyncEvent getSyncEvent() {
+    return syncEvent;
+  }
 }

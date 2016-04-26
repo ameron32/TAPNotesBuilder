@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.widget.Toast;
 
+import com.ameron32.apps.tapnotes.v2.data.backendless.model.BUser;
 import com.ameron32.apps.tapnotes.v2.data.parse.model.Note;
 import com.ameron32.apps.tapnotes.v2.data.parse.model.Program;
 import com.ameron32.apps.tapnotes.v2.data.parse.model.Talk;
@@ -52,6 +53,7 @@ public class MainApplication extends Application {
         getString(R.string.BACKENDLESS_APPLICATION_ID),
         getString(R.string.BACKENDLESS_ANDROID_SECRET_KEY),
         appVersion);
+    Backendless.Data.mapTableToClass( "Users", BUser.class );
   }
 
   void initializeParse(Application app) {

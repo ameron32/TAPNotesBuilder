@@ -31,6 +31,15 @@ import rx.functions.Func1;
  */
 public class ParseHelper {
 
+  private static ParseHelper SINGLETON;
+
+  public static ParseHelper get() {
+    if (SINGLETON == null) {
+      SINGLETON = new ParseHelper();
+    }
+    return SINGLETON;
+  }
+
   public final ParseLocalHelper cache;
   public final ParseRemoteHelper remote;
   public final ParseSyncEvent syncEvent;
@@ -52,7 +61,7 @@ public class ParseHelper {
     return users;
   }
 
-  public ParseHelper() {
+  private ParseHelper() {
     cache = new ParseLocalHelper();
     remote = new ParseRemoteHelper();
     users = new ParseUserHelper();
