@@ -13,6 +13,7 @@ import org.joda.time.DateTime;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import rx.Observable;
 import rx.Subscriber;

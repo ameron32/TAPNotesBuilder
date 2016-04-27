@@ -17,6 +17,10 @@ public class RProgram extends RealmObject implements IProgram {
   String imageUrl;
   String name;
 
+  public RProgram() {
+    // required empty constructor
+  }
+
   public RProgram(IProgram iProgram) {
     objectId = iProgram.getId();
     imageUrl = iProgram.getImageUrl();

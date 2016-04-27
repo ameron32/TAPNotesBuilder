@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.widget.Toast;
 
+import com.ameron32.apps.tapnotes.v2.data.backendless.model.BProgram;
+import com.ameron32.apps.tapnotes.v2.data.backendless.model.BTalk;
 import com.ameron32.apps.tapnotes.v2.data.backendless.model.BUser;
 import com.ameron32.apps.tapnotes.v2.data.parse.model.Note;
 import com.ameron32.apps.tapnotes.v2.data.parse.model.Program;
@@ -21,6 +23,9 @@ import com.parse.SaveCallback;
 
 import net.danlew.android.joda.JodaTimeAndroid;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+
 /**
  * Created by klemeilleur on 4/21/2016.
  */
@@ -30,6 +35,7 @@ public class MainApplication extends Application {
   public void onCreate() {
     super.onCreate();
     inject(this);
+    initializeRealm(this);
     initializeParse(this);
     initializeBackendless(this);
     initializeJodaTimeAndroid(this);
@@ -41,19 +47,26 @@ public class MainApplication extends Application {
     Injector.INSTANCE.inject(app);
   }
 
+  void initializeRealm(Application app) {
+    Realm.setDefaultConfiguration(new RealmConfiguration.Builder(app)
+        .build());
+  }
+
   void initializeBackendless(Application app) {
-    String appVersion = "1";
-    try {
-      final PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-      appVersion = pInfo.versionName + "-" + pInfo.versionCode;
-    } catch (PackageManager.NameNotFoundException e) {
-      e.printStackTrace();
-    }
+    String appVersion = "v1";
+//    try {
+//      final PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+//      appVersion = pInfo.versionName + "-" + pInfo.versionCode;
+//    } catch (PackageManager.NameNotFoundException e) {
+//      e.printStackTrace();
+//    }
     Backendless.initApp(this,
         getString(R.string.BACKENDLESS_APPLICATION_ID),
         getString(R.string.BACKENDLESS_ANDROID_SECRET_KEY),
         appVersion);
     Backendless.Data.mapTableToClass( "Users", BUser.class );
+    Backendless.Data.mapTableToClass( "Program", BProgram.class );
+    Backendless.Data.mapTableToClass( "Talk", BTalk.class );
   }
 
   void initializeParse(Application app) {
