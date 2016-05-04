@@ -154,7 +154,8 @@ public class BackendlessHelper {
                         public void call(Subscriber<? super IProgram> subscriber) {
                             if (subscriber.isUnsubscribed()) return;
                             BProgram bProgram = Backendless.Data.of(BProgram.class)
-                                .findById(programId);
+                                .find(new BackendlessDataQuery("objectId='" + programId + "'"))
+                                .getCurrentPage().get(0);
                             subscriber.onNext(bProgram);
                         }
                     });

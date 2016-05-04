@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:blur="http://schemas.android.com/apk/res-auto"
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
@@ -14,10 +15,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-      android:id="@+id/text"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Hello World!"/>
+    <RelativeLayout
+      android:id="@+id/blurrableView"
+      android:layout_width="match_parent"
+      android:layout_height="300dp"
+      android:background="#FF02ADEA">
+
+      <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Try"/>
+
+      <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/button"
+        android:text="Hello World!"/>
+    </RelativeLayout>
   </android.support.v4.widget.NestedScrollView>
+
+  <com.fivehundredpx.android.blur.BlurringView
+    android:id="@+id/blurringView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    blur:blurRadius="11"
+    blur:downsampleFactor="6"
+    blur:overlayColor="#99FFFFFF"/>
+
+  <FrameLayout
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
 </RelativeLayout>

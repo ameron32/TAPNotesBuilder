@@ -10,6 +10,7 @@ import com.ameron32.apps.tapnotes.v2.data.model.IProgram;
 import com.ameron32.apps.tapnotes.v2.data.model.ITalk;
 import com.ameron32.apps.tapnotes.v2.data.model.IUser;
 import com.ameron32.apps.tapnotes.v2.data.parse.ParseHelper;
+import com.ameron32.apps.tapnotes.v2.data.realm.RealmLocalHelper;
 
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class DataManager implements DataAccess {
         localHelper = null; // FIXME
         break;
       case Realm:
-        localHelper = null; // FIXME
+        localHelper = RealmLocalHelper.get();
         break;
       case Iron:
         localHelper = null; // FIXME

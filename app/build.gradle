@@ -2,6 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'realm-android'
 
 android {
+  dexOptions {
+    incremental true
+    maxProcessCount 4
+    javaMaxHeapSize "2g"
+  }
+
   compileSdkVersion 23
   buildToolsVersion "23.0.3"
 
@@ -11,6 +17,8 @@ android {
     targetSdkVersion 23
     versionCode 1
     versionName "1.0"
+    renderscriptTargetApi 21
+    renderscriptSupportModeEnabled true
   }
   buildTypes {
     release {
@@ -18,6 +26,11 @@ android {
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }
   }
+}
+
+repositories {
+  // blurringview specific repo
+  maven { url 'https://github.com/500px/500px-android-blur/raw/master/releases/' }
 }
 
 dependencies {
@@ -41,4 +54,7 @@ dependencies {
   provided 'com.squareup.dagger:dagger-compiler:1.2.2'
   compile 'javax.inject:javax.inject:1@jar'
   compile 'com.squareup.dagger:dagger:1.2.2'
+
+  compile 'io.github.developersofcydonia:freedtouch:1.0.0'
+  compile 'com.fivehundredpx:blurringview:1.0.0'
 }

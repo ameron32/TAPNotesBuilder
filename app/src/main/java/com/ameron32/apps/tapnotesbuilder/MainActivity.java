@@ -2,9 +2,16 @@ package com.ameron32.apps.tapnotesbuilder;
 
 import android.app.Activity;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ameron32.apps.tapnotes.v2.data.DataManager;
 import com.ameron32.apps.tapnotes.v2.data.model.INote;
@@ -15,6 +22,7 @@ import com.ameron32.apps.tapnotes.v2.di.Injector;
 import com.ameron32.apps.tapnotesbuilder.ui.base.MainMvpView;
 import com.ameron32.apps.tapnotesbuilder.ui.base.MainPresenter;
 import com.ameron32.apps.tapnotesbuilder.ui.base.Presenter;
+import com.fivehundredpx.android.blur.BlurringView;
 
 import java.util.List;
 
@@ -22,6 +30,7 @@ import javax.inject.Inject;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import io.github.developersofcydonia.freedtouch.FreeDTouch;
 import rx.Observer;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -39,6 +48,14 @@ public class MainActivity
 
   @Bind(R.id.text)
   TextView textView;
+  @Bind(R.id.button)
+  Button button;
+  @Bind(R.id.container)
+  FrameLayout container;
+  @Bind(R.id.blurringView)
+  BlurringView blurringView;
+  @Bind(R.id.blurrableView)
+  View blurrableView;
 
   MainPresenter mainPresenter;
 
@@ -54,6 +71,7 @@ public class MainActivity
     mainPresenter = new MainPresenter(dataManager);
     mainPresenter.attachView(this);
     mainPresenter.sync("BPCRNbT6Lf");
+//    initFreeDTouchAndBlurringView();
   }
 
   @Override
@@ -89,7 +107,51 @@ public class MainActivity
 
   @Override
   public void showTalksError() {
-    textView.setText("Talks error");
+
+//    textView.setText("Talks error");
+  }
+
+  private void initFreeDTouchAndBlurringView() {
+    //
+//    final String TAG = MainActivity.class.getSimpleName();
+//
+//    FreeDTouch.OnForceTouchListener onForceTouchListener = new FreeDTouch.OnForceTouchListener() {
+//      @Override
+//      public void onPeek(View popup, View v, MotionEvent e) {
+//        Log.d(TAG, "onPeek");
+//        Toast.makeText(MainActivity.this, "PEEK", Toast.LENGTH_SHORT).show();
+//        ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(20);
+//
+//        // To find views inside your popup, use popup.findViewById(...).
+//        // E.g. -> TextView textView = (TextView) popup.findViewById(R.id.textview);
+//      }
+//
+//      @Override
+//      public void onPop(View popup, View v, MotionEvent e) {
+//        Log.d(TAG, "onPop");
+//        Toast.makeText(MainActivity.this, "POP", Toast.LENGTH_SHORT).show();
+//        ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(20);
+//
+//        blurringView.setBlurredView(blurrableView);
+//        blurringView.invalidate();
+//      }
+//
+//      @Override
+//      public void onClick(View popup, View v, MotionEvent e) {
+//        Log.d(TAG, "onClick");
+//        Toast.makeText(MainActivity.this, "Click", Toast.LENGTH_SHORT).show();
+//      }
+//
+//      @Override
+//      public void onCancel(View popup, View v, MotionEvent e) {
+//        Log.d(TAG, "onCancel");
+//        Toast.makeText(MainActivity.this, "Cancel", Toast.LENGTH_SHORT).show();
+//      }
+//    };
+//
+//    FreeDTouch.setup(button, onForceTouchListener)
+//        .addPopup(container, R.layout.example)
+//        .start();
   }
 
 //  @Override
